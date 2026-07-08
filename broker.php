@@ -1,4 +1,12 @@
 <?php
+file_put_contents(
+    "requests.log",
+    date("Y-m-d H:i:s") . " " .
+    $_SERVER['REQUEST_METHOD'] . " " .
+    $_SERVER['REQUEST_URI'] . " UA=" .
+    $_SERVER['HTTP_USER_AGENT'] . "\n",
+    FILE_APPEND
+);
 // Force absolute directory resolution to ensure stable read/writes across cloud nodes
 $inputFile = dirname(__FILE__) . '/input.txt';
 $outputFile = dirname(__FILE__) . '/output.txt';
