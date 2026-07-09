@@ -58,85 +58,72 @@
 </html>
 --!>
 !-->
-<?php
-// index.php
-?>
-
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
 
-    <meta charset="UTF-8">
-    <title>Remote Message Console</title>
+<meta charset="UTF-8">
+
+<title>Web Message Console</title>
+
+<style>
+
+body {
+    background-color:#121212;
+    color:#00FF00;
+    font-family:monospace;
+    padding:20px;
+}
 
 
-    <style>
+#terminal {
 
-        body {
-            background-color: #121212;
-            color: #00ff00;
-            font-family: monospace;
-            padding: 20px;
-        }
+    width:100%;
+    height:400px;
+    background:#000;
+    border:1px solid #333;
+    padding:10px;
+    overflow-y:auto;
+    white-space:pre-wrap;
 
-
-        #terminal {
-
-            width: 100%;
-            height: 400px;
-
-            background-color: #000;
-
-            border: 1px solid #333;
-
-            padding: 10px;
-
-            overflow-y: auto;
-
-            white-space: pre-wrap;
-
-            box-sizing: border-box;
-
-            margin-bottom: 10px;
-        }
+}
 
 
-        #msg {
+#cmdInput {
 
-            width: 80%;
+    width:80%;
+    background:#222;
+    border:1px solid #555;
+    color:white;
+    padding:10px;
+    font-family:monospace;
 
-            background: #222;
-
-            border: 1px solid #555;
-
-            color: white;
-
-            padding: 10px;
-
-            font-family: monospace;
-        }
+}
 
 
-        button {
+#sendBtn {
 
-            width: 18%;
+    width:18%;
+    padding:10px;
+    background:#00FF00;
+    color:#000;
+    font-weight:bold;
+    cursor:pointer;
+    border:none;
 
-            padding: 10px;
-
-            background: #00ff00;
-
-            color: black;
-
-            font-weight: bold;
-
-            cursor: pointer;
-
-            border: none;
-        }
+}
 
 
-    </style>
+.online {
+    color:#00ff00;
+}
+
+
+.offline {
+    color:red;
+}
+
+</style>
 
 </head>
 
@@ -144,141 +131,162 @@
 <body>
 
 
-    <h2>
-        Remote Message Console
-    </h2>
+<h2>Web Message Console</h2>
 
 
-    <div id="terminal">
-        Waiting for target system...
-    </div>
+<div id="status">
+Checking connection...
+</div>
 
 
-
-    <input
-        type="text"
-        id="msg"
-        placeholder="Type message..."
-    >
+<div id="terminal">
+Waiting for messages...
+</div>
 
 
+<input id="cmdInput"
+placeholder="Type message..." />
 
-    <button onclick="sendMessage()">
-        Send
-    </button>
 
+<button id="sendBtn"
+onclick="sendMessage()">
+Send
+</button>
 
 
 
 <script>
 
 
-const terminal = document.getElementById("terminal");
+let lastCount=0;
+
+
+function print(text)
+{
+    let box=document.getElementById("terminal");
+
+    box.innerHTML += text+"\n";
+
+    box.scrollTop=box.scrollHeight;
+}
 
 
 
-function sendMessage()
+async function sendMessage()
 {
 
     let msg =
-        document.getElementById("msg").value;
+    document.getElementById("cmdInput").value;
 
 
-
-    fetch(
-        "broker.php?action=send",
+    await fetch(
+        "hi.php?action=send&from=browser",
         {
-
-            method: "POST",
-
-            headers:
-            {
-                "Content-Type":
-                "application/x-www-form-urlencoded"
-            },
-
-
-            body:
-                "msg=" +
-                encodeURIComponent(msg)
-
+            method:"POST",
+            body:msg
         }
     );
 
 
-
-    document.getElementById("msg").value = "";
+    document.getElementById("cmdInput").value="";
 
 }
 
 
 
-
-
-function updateStatus()
+async function updateMessages()
 {
 
-    fetch(
-        "broker.php?action=status"
-    )
+    let r =
+    await fetch("hi.php?action=get");
 
 
-    .then(
-        response => response.json()
-    )
+    let data =
+    await r.json();
 
 
-    .then(
-        data =>
+    if(data.length > lastCount)
+    {
+
+        for(let i=lastCount;i<data.length;i++)
         {
 
-
-            if(data.online)
-            {
-
-                terminal.textContent = "";
-
-
-                data.responses.forEach(
-                    message =>
-                    {
-
-                        terminal.textContent +=
-                            message + "\n";
-
-                    }
-                );
-
-
-            }
-            else
-            {
-
-                terminal.textContent =
-                    "Waiting for target system...";
-
-            }
-
+            print(
+            "["+
+            data[i].from+
+            "] "+
+            data[i].message
+            );
 
         }
-    );
+
+
+        lastCount=data.length;
+
+    }
 
 }
 
 
 
+async function updateStatus()
+{
+
+    await fetch(
+    "hi.php?action=status&name=browser"
+    );
 
 
-setInterval(
-    updateStatus,
-    1000
-);
+    let r =
+    await fetch("hi.php?action=check");
 
+
+    let data =
+    await r.json();
+
+
+    let now =
+    Math.floor(Date.now()/1000);
+
+
+    let text="";
+
+
+    if(data.browser &&
+       now-data.browser < 10)
+    {
+        text+="Browser: ONLINE\n";
+    }
+    else
+    {
+        text+="Browser: OFFLINE\n";
+    }
+
+
+    if(data.cpp &&
+       now-data.cpp < 10)
+    {
+        text+="C++ App: ONLINE";
+    }
+    else
+    {
+        text+="C++ App: OFFLINE";
+    }
+
+
+    document.getElementById("status").innerText=text;
+
+}
+
+
+
+setInterval(updateMessages,2000);
+
+setInterval(updateStatus,3000);
 
 
 </script>
 
 
 </body>
-
 </html>
