@@ -59,234 +59,131 @@
 --!>
 !-->
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-
 <meta charset="UTF-8">
-
-<title>Web Message Console</title>
+<title>Message Console</title>
 
 <style>
-
-body {
-    background-color:#121212;
-    color:#00FF00;
-    font-family:monospace;
-    padding:20px;
+body{
+background:#121212;
+color:#00FF00;
+font-family:monospace;
+padding:20px;
 }
 
-
-#terminal {
-
-    width:100%;
-    height:400px;
-    background:#000;
-    border:1px solid #333;
-    padding:10px;
-    overflow-y:auto;
-    white-space:pre-wrap;
-
+#terminal{
+width:100%;
+height:400px;
+background:#000;
+border:1px solid #333;
+padding:10px;
+overflow-y:scroll;
+white-space:pre-wrap;
 }
 
-
-#cmdInput {
-
-    width:80%;
-    background:#222;
-    border:1px solid #555;
-    color:white;
-    padding:10px;
-    font-family:monospace;
-
+#msg{
+width:80%;
+background:#222;
+color:white;
+border:1px solid #555;
+padding:10px;
 }
 
-
-#sendBtn {
-
-    width:18%;
-    padding:10px;
-    background:#00FF00;
-    color:#000;
-    font-weight:bold;
-    cursor:pointer;
-    border:none;
-
-}
-
-
-.online {
-    color:#00ff00;
-}
-
-
-.offline {
-    color:red;
+button{
+width:18%;
+padding:10px;
+background:#00FF00;
+border:0;
+font-weight:bold;
 }
 
 </style>
-
 </head>
-
 
 <body>
 
+<h2>Message Console</h2>
 
-<h2>Web Message Console</h2>
+<div id="status">Checking...</div>
 
+<div id="terminal">Waiting for messages...</div>
 
-<div id="status">
-Checking connection...
-</div>
+<br>
 
+<input id="msg" placeholder="Type message">
 
-<div id="terminal">
-Waiting for messages...
-</div>
-
-
-<input id="cmdInput"
-placeholder="Type message..." />
-
-
-<button id="sendBtn"
-onclick="sendMessage()">
-Send
-</button>
-
+<button onclick="send()">SEND</button>
 
 
 <script>
 
+let count=0;
 
-let lastCount=0;
 
-
-function print(text)
+function print(t)
 {
-    let box=document.getElementById("terminal");
-
-    box.innerHTML += text+"\n";
-
-    box.scrollTop=box.scrollHeight;
+let box=document.getElementById("terminal");
+box.innerHTML+=t+"\n";
+box.scrollTop=box.scrollHeight;
 }
 
 
-
-async function sendMessage()
+async function send()
 {
+let m=document.getElementById("msg").value;
 
-    let msg =
-    document.getElementById("cmdInput").value;
+if(!m)return;
 
+await fetch("hi.php?action=send",
+{
+method:"POST",
+body:m
+});
 
-    await fetch(
-        "hi.php?action=send&from=browser",
-        {
-            method:"POST",
-            body:msg
-        }
-    );
-
-
-    document.getElementById("cmdInput").value="";
-
+document.getElementById("msg").value="";
 }
 
 
-
-async function updateMessages()
+async function receive()
 {
+let r=await fetch("hi.php?action=get");
+let data=await r.json();
 
-    let r =
-    await fetch("hi.php?action=get");
-
-
-    let data =
-    await r.json();
-
-
-    if(data.length > lastCount)
-    {
-
-        for(let i=lastCount;i<data.length;i++)
-        {
-
-            print(
-            "["+
-            data[i].from+
-            "] "+
-            data[i].message
-            );
-
-        }
-
-
-        lastCount=data.length;
-
-    }
+while(count<data.length)
+{
+print(data[count]);
+count++;
+}
 
 }
 
 
-
-async function updateStatus()
+async function status()
 {
+await fetch("hi.php?action=status&name=browser");
 
-    await fetch(
-    "hi.php?action=status&name=browser"
-    );
+let r=await fetch("hi.php?action=check");
+let s=await r.json();
 
+let now=Math.floor(Date.now()/1000);
 
-    let r =
-    await fetch("hi.php?action=check");
+let t="";
 
+t+=s.browser&&now-s.browser<10?
+"Browser ONLINE\n":"Browser OFFLINE\n";
 
-    let data =
-    await r.json();
+t+=s.cpp&&now-s.cpp<10?
+"C++ ONLINE":"C++ OFFLINE";
 
-
-    let now =
-    Math.floor(Date.now()/1000);
-
-
-    let text="";
-
-
-    if(data.browser &&
-       now-data.browser < 10)
-    {
-        text+="Browser: ONLINE\n";
-    }
-    else
-    {
-        text+="Browser: OFFLINE\n";
-    }
-
-
-    if(data.cpp &&
-       now-data.cpp < 10)
-    {
-        text+="C++ App: ONLINE";
-    }
-    else
-    {
-        text+="C++ App: OFFLINE";
-    }
-
-
-    document.getElementById("status").innerText=text;
-
+document.getElementById("status").innerText=t;
 }
 
 
-
-setInterval(updateMessages,2000);
-
-setInterval(updateStatus,3000);
-
+setInterval(receive,2000);
+setInterval(status,3000);
 
 </script>
-
 
 </body>
 </html>
