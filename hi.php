@@ -40,7 +40,11 @@ function saveJson($file,$data)
         LOCK_EX
     );
 }
-
+if($action=="debug")
+{
+    echo file_get_contents("messages.json");
+    exit;
+}
 
 
 if($action=="send")
