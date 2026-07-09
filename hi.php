@@ -1,71 +1,56 @@
 <?php
-
 $file="messages.json";
 $statusFile="status.json";
 $action=$_GET["action"]??"";
 
+if($action=="send"){
+$msg=file_get_contents("php://input");
+if(!$msg){echo"ERROR";exit;}
 
-if($action=="send")
-{
-    $msg=file_get_contents("php://input");
+$messages=[];
+if(file_exists($file))
+$messages=json_decode(file_get_contents($file),true);
 
-    if(!$msg){echo "ERROR";exit;}
-
-    $messages=[];
-
-    if(file_exists($file))
-        $messages=json_decode(file_get_contents($file),true);
-
-    $messages[]=$msg;
-
-    file_put_contents($file,json_encode($messages));
-
-    echo "OK";
-    exit;
+$messages[]=$msg;
+file_put_contents($file,json_encode($messages));
+echo"OK";
+exit;
 }
 
-
-if($action=="get")
-{
-    if(!file_exists($file))
-    {
-        echo "[]";
-        exit;
-    }
-
-    echo file_get_contents($file);
-    exit;
+if($action=="get"){
+if(!file_exists($file)){echo"[]";exit;}
+echo file_get_contents($file);
+exit;
 }
 
+if($action=="latest"){
+if(!file_exists($file)){echo"";exit;}
 
-if($action=="status")
-{
-    $name=$_GET["name"]??"unknown";
+$messages=json_decode(file_get_contents($file),true);
 
-    $status=[];
+if(count($messages)>0)
+echo end($messages);
 
-    if(file_exists($statusFile))
-        $status=json_decode(file_get_contents($statusFile),true);
-
-    $status[$name]=time();
-
-    file_put_contents($statusFile,json_encode($status));
-
-    echo "OK";
-    exit;
+exit;
 }
 
+if($action=="status"){
+$name=$_GET["name"]??"unknown";
+$status=[];
 
-if($action=="check")
-{
-    if(!file_exists($statusFile))
-    {
-        echo "{}";
-        exit;
-    }
+if(file_exists($statusFile))
+$status=json_decode(file_get_contents($statusFile),true);
 
-    echo file_get_contents($statusFile);
-    exit;
+$status[$name]=time();
+
+file_put_contents($statusFile,json_encode($status));
+echo"OK";
+exit;
 }
 
+if($action=="check"){
+if(!file_exists($statusFile)){echo"{}";exit;}
+echo file_get_contents($statusFile);
+exit;
+}
 ?>
