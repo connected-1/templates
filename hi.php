@@ -9,8 +9,11 @@ if($_SERVER['REQUEST_METHOD']=="OPTIONS")
     exit;
 }
 
-$file="messages.json";
+
+$commandFile="commands.json";
+$outputFile="outputs.json";
 $statusFile="status.json";
+
 
 $action=$_GET["action"]??"";
 
@@ -40,31 +43,26 @@ function saveJson($file,$data)
         LOCK_EX
     );
 }
-if($action=="debug")
-{
-    echo file_get_contents("messages.json");
-    exit;
-}
 
 
+// frontend/backend sends command
 if($action=="send")
 {
-    // Read raw body
     $msg=file_get_contents("php://input");
 
 
-    if($msg===false || strlen($msg)==0)
+    if(empty($msg))
     {
         echo "ERROR_EMPTY";
         exit;
     }
 
 
-    $messages=loadJson($file);
+    $commands=loadJson($commandFile);
 
-    $messages[]=$msg;
+    $commands[]=$msg;
 
-    saveJson($file,$messages);
+    saveJson($commandFile,$commands);
 
 
     echo "OK";
@@ -72,11 +70,55 @@ if($action=="send")
 }
 
 
+// backend reads command
+if($action=="latest")
+{
+    $commands=loadJson($commandFile);
 
+
+    if(count($commands)>0)
+    {
+        echo end($commands);
+
+        // remove executed command
+        array_pop($commands);
+        saveJson($commandFile,$commands);
+    }
+
+    exit;
+}
+
+
+// backend sends CMD output
+if($action=="output")
+{
+    $msg=file_get_contents("php://input");
+
+
+    if(empty($msg))
+    {
+        echo "ERROR_EMPTY";
+        exit;
+    }
+
+
+    $outputs=loadJson($outputFile);
+
+    $outputs[]=$msg;
+
+    saveJson($outputFile,$outputs);
+
+
+    echo "OK";
+    exit;
+}
+
+
+// frontend reads CMD output
 if($action=="get")
 {
     echo json_encode(
-        loadJson($file),
+        loadJson($outputFile),
         JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES
     );
 
@@ -84,17 +126,15 @@ if($action=="get")
 }
 
 
-
-if($action=="latest")
+// clear logs
+if($action=="clear")
 {
-    $messages=loadJson($file);
+    saveJson($outputFile,[]);
 
-    if(count($messages)>0)
-        echo end($messages);
+    echo "CLEARED";
 
     exit;
 }
-
 
 
 if($action=="status")
@@ -107,11 +147,9 @@ if($action=="status")
 
     saveJson($statusFile,$status);
 
-
     echo "OK";
     exit;
 }
-
 
 
 if($action=="check")
@@ -127,6 +165,137 @@ if($action=="check")
 echo "INVALID_ACTION";
 
 ?>
+
+#######################################################
+// header("Access-Control-Allow-Origin: *");
+// header("Access-Control-Allow-Methods: GET, POST, OPTIONS");
+// header("Access-Control-Allow-Headers: Content-Type");
+
+// if($_SERVER['REQUEST_METHOD']=="OPTIONS")
+// {
+//     exit;
+// }
+
+// $file="messages.json";
+// $statusFile="status.json";
+
+// $action=$_GET["action"]??"";
+
+
+// function loadJson($file)
+// {
+//     if(!file_exists($file))
+//         return [];
+
+//     $data=json_decode(file_get_contents($file),true);
+
+//     if(!is_array($data))
+//         return [];
+
+//     return $data;
+// }
+
+
+// function saveJson($file,$data)
+// {
+//     file_put_contents(
+//         $file,
+//         json_encode(
+//             $data,
+//             JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES
+//         ),
+//         LOCK_EX
+//     );
+// }
+// if($action=="debug")
+// {
+//     echo file_get_contents("messages.json");
+//     exit;
+// }
+
+
+// if($action=="send")
+// {
+//     // Read raw body
+//     $msg=file_get_contents("php://input");
+
+
+//     if($msg===false || strlen($msg)==0)
+//     {
+//         echo "ERROR_EMPTY";
+//         exit;
+//     }
+
+
+//     $messages=loadJson($file);
+
+//     $messages[]=$msg;
+
+//     saveJson($file,$messages);
+
+
+//     echo "OK";
+//     exit;
+// }
+
+
+
+// if($action=="get")
+// {
+//     echo json_encode(
+//         loadJson($file),
+//         JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES
+//     );
+
+//     exit;
+// }
+
+
+
+// if($action=="latest")
+// {
+//     $messages=loadJson($file);
+
+//     if(count($messages)>0)
+//         echo end($messages);
+
+//     exit;
+// }
+
+
+
+// if($action=="status")
+// {
+//     $name=$_GET["name"]??"unknown";
+
+//     $status=loadJson($statusFile);
+
+//     $status[$name]=time();
+
+//     saveJson($statusFile,$status);
+
+
+//     echo "OK";
+//     exit;
+// }
+
+
+
+// if($action=="check")
+// {
+//     echo json_encode(
+//         loadJson($statusFile)
+//     );
+
+//     exit;
+// }
+
+
+// echo "INVALID_ACTION";
+
+
+#####################################
+
 // $file="messages.json";
 // $statusFile="status.json";
 // $action=$_GET["action"]??"";
